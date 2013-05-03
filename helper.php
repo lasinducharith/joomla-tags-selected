@@ -48,59 +48,8 @@ abstract class ModTagsselectedHelper
 				return $results = false;
 			}
 
-			$tagCount = substr_count($tagsToMatch, ',') + 1;
-
-			$query = $db->getQuery(true)
-				->select(
-				array(
-					$db->quoteName('m.tag_id'),
-					$db->quoteName('m.core_content_id'),
-					$db->quoteName('m.content_item_id'),
-					$db->quoteName('m.type_alias'),
-						'COUNT( '  . $db->quoteName('tag_id') . ') AS ' . $db->quoteName('count'),
-					$db->quoteName('t.access'),
-					$db->quoteName('t.id'),
-					$db->quoteName('ct.router'),
-					$db->quoteName('cc.core_title'),
-					$db->quoteName('cc.core_alias'),
-					$db->quoteName('cc.core_catid'),
-					$db->quoteName('cc.core_language')
-					)
-			);
-
-			$query->from($db->quoteName('#__contentitem_tag_map', 'm'));
-
-			$query->join('INNER', $db->quoteName('#__tags', 't') . ' ON m.tag_id = t.id')
-				->join('INNER', $db->quoteName('#__ucm_content', 'cc') . ' ON m.core_content_id = cc.core_content_id')
-				->join('INNER', $db->quoteName('#__content_types', 'ct') . ' ON m.type_alias = ct.type_alias');
-
-			$query->where('t.access IN (' . $groups . ')');
-			$query->where($db->quoteName('m.tag_id') . ' IN (' . $tagsToMatch . ')');
-
-
-			// Only return published tags
-			$query->where($db->quoteName('cc.core_state') . ' = 1 ');
-
-			// Optionally filter on language
-			$language = JComponentHelper::getParams('com_tags')->get('tag_list_language_filter', 'all');
-
-			if ($language != 'all')
-			{
-				if ($language == 'current_language')
-				{
-					$language = JHelperContent::getCurrentLanguage();
-				}
-				$query->where($db->quoteName('cc.core_language') . ' IN (' . $db->quote($language) . ', ' . $db->quote('*') . ')');
-			}
-
-			$query->group($db->quoteName(array('m.core_content_id')));
-			if ($tagCount > 0)
-			{
-				$query->having('COUNT( '  . $db->quoteName('tag_id') . ')  = ' . $tagCount);
 			
-			}
-
-			$query->order($db->quoteName('count') . ' DESC');
+			$query=$tagsHelper->getTagItemsQuery($tagsToMatch, $typesr = null, $includeChildren = false, $orderByOption = 'c.core_title', $orderDir = 'ASC',$anyOrAll = true, $languageFilter = 'all', $stateFilter = '0,1');
 			$db->setQuery($query, 0, $maximum);
 			$results = $db->loadObjectList();
 
